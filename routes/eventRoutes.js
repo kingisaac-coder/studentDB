@@ -1,42 +1,45 @@
 const express = require("express");
 const router = express.Router();
 const Event = require("../models/Event");
-const { protect, adminOnly } = require("../middleware/authMiddleware");
 
-// Create event (Admin only)
-router.post("/", protect, adminOnly, async (req, res) => {
+// ➕ Create
+router.post("/", async (req, res) => {
   try {
     const event = await Event.create(req.body);
     res.status(201).json(event);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// Get all events (anyone)
+// 📋 Get all
 router.get("/", async (req, res) => {
-  const events = await Event.find().sort({ date: 1 });
-  res.json(events);
+  try {
+    const events = await Event.find();
+    res.json(events);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// Update event (Admin only)
-router.put("/:id", protect, adminOnly, async (req, res) => {
+// ✏ Update
+router.put("/:id", async (req, res) => {
   try {
     const updated = await Event.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updated);
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ error: err.message });
   }
 });
 
-// Delete event (Admin only)
-router.delete("/:id", protect, adminOnly, async (req, res) => {
+// ❌ Delete
+router.delete("/:id", async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
     res.json({ message: "Event deleted" });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-module.exports = router;
+module.exports = router;
