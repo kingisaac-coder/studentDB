@@ -1,30 +1,39 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const connectDB = require("./config/db");
+import express from "express";
+import mongoose from "mongoose";
+import cors from "cors";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import archiveRoutes from "./routes/archiveRoutes.js";
 
-dotenv.config();
-connectDB();
+// __dirname workaround for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-
-// ✅ Allow frontend to access API
-app.use(cors({
-  origin: ["http://localhost:3000", "https://studentdb-frontend.onrender.com"], 
-  credentials: true
-}));
-
+app.use(cors());
 app.use(express.json());
 
-// health check
-app.get("/", (req, res) => res.send("Student Database API ✅"));
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/students", require("./routes/studentRoutes"));
-app.use("/api/announcements", require("./routes/announcementRoutes"));
-app.use("/api/events", require("./routes/eventRoutes"));
-app.use("/api/archives", require("./routes/archiveRoutes"));
+// Ensure uploads directory exists
+const uploadPath = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
 
+// Connect to MongoDB
+mongoose
+  .connect("mongodb://127.0.0.1:27017/archiveDB", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
+
+// Use archive routes
+app.use("/api/archives", archiveRoutes);
+
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
