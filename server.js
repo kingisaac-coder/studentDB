@@ -14,13 +14,14 @@ connectDB();
 const app = express();
 
 // ✅ Allow frontend to access API
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "https://studentdb-frontend.onrender.com"],
-    credentials: true,
-  })
-);
-
+ app.use(cors({
+  origin: [
+    "http://localhost:3000",     // for local React testing
+    "https://cyb-sm-core.netlify.app" // your live frontend
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 app.use(express.json());
 
 // ✅ Ensure uploads directory exists
@@ -48,3 +49,4 @@ app.use("/api/timetables", require("./routes/timetableRoutes"));
 // ✅ Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
