@@ -22,3 +22,18 @@ exports.adminOnly = (req, res, next) => {
     res.status(403).json({ message: "Admins only!" });
   }
 };
+
+// Dummy middleware for testing
+function protect(req, res, next) {
+  // Add real authentication logic later
+  console.log("Protect middleware hit");
+  next();
+}
+
+function adminOnly(req, res, next) {
+  // Add real admin check logic later
+  console.log("AdminOnly middleware hit");
+  next();
+}
+
+module.exports = { protect, adminOnly };
