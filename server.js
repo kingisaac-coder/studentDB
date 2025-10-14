@@ -1,29 +1,30 @@
 const express = require("express");
-const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 const cors = require("cors");
-const path = require("path");
-const fs = require("fs");
-const archiveRoutes = require("./routes/archiveRoutes");
+const connectDB = require("./config/db");
+
+dotenv.config();
+connectDB();
 
 const app = express();
-app.use(cors());
+
+// ✅ Allow frontend to access API
+app.use(cors({
+  origin: ["http://localhost:3000", "https://studentdb-frontend.onrender.com"], 
+  credentials: true
+}));
+
 app.use(express.json());
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// health check
+app.get("/", (req, res) => res.send("Student Database API ✅"));
 
-// Connect MongoDB
-mongoose
-  .connect("mongodb://127.0.0.1:27017/archiveDB", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error(err));
+// routes
+app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/students", require("./routes/studentRoutes"));
+app.use("/api/announcements", require("./routes/announcementRoutes"));
+app.use("/api/events", require("./routes/eventRoutes"));
+app.use("/api/archives", require("./routes/archiveRoutes"));
 
-// Use archive routes
-app.use("/api/archives", archiveRoutes);
-
-// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(Server running on port ${PORT}))
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
