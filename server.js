@@ -1,34 +1,88 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const cors = require("cors");
-const connectDB = require("./config/db");
+const express = require("express")
+const mongoose = require("mongoose")
+const cors = require("cors")
+const multer = require("multer")
+const path = require("path")
+const fs = require("fs")
+const Archive = require("./models/Archive") // your archive schema
 
-dotenv.config();
-connectDB();
+const app = express()
+app.use(cors())
+app.use(express.json())
 
-const app = express();
+// Make uploads folder static
+app.use("/uploads", express.static(path.join(__dirname, "uploads")))
 
-// ✅ Allow frontend to access API
-app.use(cors({
-  origin: ["http://localhost:3000", "https://studentdb-frontend.onrender.com"], 
-  credentials: true
-}));
+// Connect to MongoDB
+mongoose.connect("mongodb://127.0.0.1:27017/archiveDB", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log("MongoDB connected"))
+.catch((err) => console.error(err))
 
-app.use(express.json());
+// Multer setup for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "uploads")
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath)
+    cb(null, "uploads")
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = ${Date.now()}-${file.originalname}
+    cb(null, uniqueName)
+  }
+})
+const upload = multer({ storage })
 
-// health check
-app.get("/", (req, res) => res.send("Student Database API ✅"));
+// Upload file
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" })
+  const fileUrl = ${req.protocol}://${req.get("host")}/uploads/${req.file.filename}
+  res.json({ fileUrl })
+})
 
-// routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/students", require("./routes/studentRoutes"));
-app.use("/api/announcements", require("./routes/announcementRoutes"));
-app.use("/api/events", require("./routes/eventRoutes"));
-app.use("/api/archives", require("./routes/archiveRoutes"));
+// Get all archives
+app.get("/api/archives", async (req, res) => {
+  try {
+    const archives = await Archive.find().sort({ createdAt: -1 })
+    res.json(archives)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+// Add new archive
+app.post("/api/archives", async (req, res) => {
+  try {
+    const newArchive = new Archive(req.body)
+    const saved = await newArchive.save()
+    res.status(201).json(saved)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
 
+// Update archive
+app.put("/api/archives/:id", async (req, res) => {
+  try {
+    const updated = await Archive.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    res.json(updated)
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
 
+// Delete archive
+app.delete("/api/archives/:id", async (req, res) => {
+  try {
+    await Archive.findByIdAndDelete(req.params.id)
+    res.json({ message: "Archive deleted" })
+  } catch (err) {
+    res.status(400).json({ error: err.message })
+  }
+})
 
-
+// Start server
+const PORT = 5000
+app.listen(PORT, () => console.log(Server running on port ${PORT}))
